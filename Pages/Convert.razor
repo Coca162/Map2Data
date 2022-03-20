@@ -8,13 +8,12 @@
 <InputFile OnChange="@SetNewSVG" />
 
 <svg
-   viewBox="0 0 811.18917 1052.4033"
-   width="811.18915"
-   height="1052.4033">
+   width=@(data is null ? 0 : data.Size.Item1)
+   height=@(data is null ? 0 : data.Size.Item2)>
 @{
     if (data is not null) 
     {
-        foreach(var line in data)
+        foreach(var line in data.Counties)
         {
              <path
              style="fill:@(line.Selected ? "#FF0000" : "none");stroke:#000000;stroke-miterlimit:10;stroke-width:2;"
@@ -36,7 +35,7 @@
 
 @code {
     private string name = "";
-    private List<SVGData> data;
+    private Map data;
     private int i = 0;
 
     private async Task SetNewSVG(InputFileChangeEventArgs e)
@@ -48,28 +47,26 @@
         Console.WriteLine(e.File.Name.Split('.').Last());
 
         if (e.File.Name.Split('.').Last() == "svg")
-            data = SVGData.ProcessSVG(file).ToList();
+            data = Map.ProcessSVG(file);
         else if (e.File.Name.Split('.').Last() == "csv")
-            data = SVGData.ProcessCSV(file).ToList();
+            data = Map.ProcessCSV(file);
         else
         {
             await js.InvokeVoidAsync("alert", "This file type is not supported!");
             return;
         }
-        data[i].Selected = true;
+        RefreshMap();
     }
 
     private void NextObject()
     {
-        var current = data[i];
+        var current = data.Counties[i];
         current.Selected = false;
         current.Name = name;
 
-        if (i == data.Count - 1) i = 0;
+        if (i == data.Counties.Count - 1) i = 0;
         else i++;
-        var next = data[i];
-        next.Selected = true;
-        name = next.Name;
+        RefreshMap();
     }
 
     private async Task DeleteObject()
@@ -77,15 +74,21 @@
         bool confirmed = await js.InvokeAsync<bool>("confirm", "Are you sure you want to delete this object?");
         if (!confirmed) return;
 
-        data.RemoveAt(i);
-        var next = data[i];
+        data.Counties.RemoveAt(i);
+        i = 0;
+        RefreshMap();
+    }
+
+    private void RefreshMap()
+    {
+        var next = data.Counties[i];
         next.Selected = true;
         name = next.Name;
     }
 
     public async Task SaveMap()
     {
-        var text = SVGData.ToCSV(data);
+        var text = Map.ToCSV(data);
         var bytes = System.Text.Encoding.UTF8.GetBytes(text);
         await SaveAs("output.csv", bytes);
     }
