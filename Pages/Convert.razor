@@ -25,6 +25,8 @@
 
 <p style="font-size:40px;color:@(data is null ? "white" : "black");" disabled=@(data is null)>@(name is "" ? "No Name!" : name)</p>
 
+<button class="btn btn-primary" @onclick="PreviousObject" disabled=@(data is null)>Previous Object</button>
+
 <button class="btn btn-primary" @onclick="NextObject" disabled=@(data is null)>Next Object</button>
 
 <input placeholder="Name Of Object" @bind="name" disabled=@(data is null) />
@@ -55,18 +57,27 @@
             await js.InvokeVoidAsync("alert", "This file type is not supported!");
             return;
         }
-        RefreshMap();
+        RefreshCounty();
+    }
+
+    private void PreviousObject()
+    {
+        SaveCounty();
+
+        if (i == 0) i = data.Counties.Count - 1;
+        else i--;
+
+        RefreshCounty();
     }
 
     private void NextObject()
     {
-        var current = data.Counties[i];
-        current.Selected = false;
-        current.Name = name;
+        SaveCounty();
 
         if (i == data.Counties.Count - 1) i = 0;
         else i++;
-        RefreshMap();
+
+        RefreshCounty();
     }
 
     private async Task DeleteObject()
@@ -76,10 +87,17 @@
 
         data.Counties.RemoveAt(i);
         i = 0;
-        RefreshMap();
+        RefreshCounty();
     }
 
-    private void RefreshMap()
+    private void SaveCounty()
+    {
+        var current = data.Counties[i];
+        current.Selected = false;
+        current.Name = name;
+    }
+
+    private void RefreshCounty()
     {
         var next = data.Counties[i];
         next.Selected = true;
