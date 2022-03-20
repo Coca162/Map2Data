@@ -1,11 +1,11 @@
 ﻿@page "/"
+@using System.Web;
 @inject IJSRuntime js
+@inject HttpClient http
 
 <PageTitle>Converter</PageTitle>
 
 <h1>Converter</h1>
-
-<InputFile OnChange="@SetNewSVG" />
 
 <svg
    width=@(data is null ? 0 : data.Size.Item1)
@@ -23,6 +23,15 @@
 }
 </svg>
 
+<InputFile OnChange="@SetNewSVG" />
+
+<select @onchange="SetNewSVG">
+    @foreach (var cnt in maps)
+    {
+        <option value="@cnt">@cnt</option>
+    }
+</select>
+
 <p style="font-size:40px;color:@(data is null ? "white" : "black");" disabled=@(data is null)>@(name is "" ? "No Name!" : name)</p>
 
 <button class="btn btn-primary" @onclick="PreviousObject" disabled=@(data is null)>Previous Object</button>
@@ -37,11 +46,29 @@
 
 @code {
     private string name = "";
+    private string district = "";
     private Map data;
     private int i = 0;
+    private List<string> maps = new() { "SpookVooper", "Ardenti Terra", "Avalon", "Elysian Katonia", "Kogi", "Lanatia", "Landing Cove", "Los Vooperis", "New Avalon", "New Spudland", "New Vooepris", "Novastella", "Old King", "San Vooperisco", "Thesonica", "Voopmont"};
+
+    private async Task SetNewSVG(ChangeEventArgs e)
+    {
+        name = "";
+        i = 0;
+        district = e.Value.ToString().Replace(" ", "%20");
+
+        //string svg = await http.GetStringAsync("https://raw.githubusercontent.com/Coca162/SvMedia/main/Objects/" + district);
+        string svg = await http.GetStringAsync("https://raw.githubusercontent.com/Coca162/SvMedia/main/Districts/" + district + "/counties.svg");
+
+        data = Map.ProcessSVG(svg);
+        Console.WriteLine("It is definitely: " + district);
+    }
 
     private async Task SetNewSVG(InputFileChangeEventArgs e)
     {
+        name = "";
+        i = 0;
+
         var buffer = new byte[e.File.Size];
         await e.File.OpenReadStream().ReadAsync(buffer);
         string file = System.Text.Encoding.UTF8.GetString(buffer);
@@ -63,20 +90,16 @@
     private void PreviousObject()
     {
         SaveCounty();
-
         if (i == 0) i = data.Counties.Count - 1;
         else i--;
-
         RefreshCounty();
     }
 
     private void NextObject()
     {
         SaveCounty();
-
         if (i == data.Counties.Count - 1) i = 0;
         else i++;
-
         RefreshCounty();
     }
 
@@ -87,6 +110,7 @@
 
         data.Counties.RemoveAt(i);
         i = 0;
+
         RefreshCounty();
     }
 

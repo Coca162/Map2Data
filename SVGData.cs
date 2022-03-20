@@ -18,7 +18,7 @@ public class Map
     public static Map ProcessSVG(string svg)
     {
         var split = svg.Split("d=\"").Where(x => x.StartsWith("m ", StringComparison.InvariantCultureIgnoreCase));
-        var trimmed = split.Select(x => x.Split(" z\" />")[0] + " z");
+        var trimmed = split.Select(x => x.Split('"')[0]);
 
         var tuple = (svg.Split("width=\"")[1].Split('"')[0], svg.Split("height=\"")[1].Split('"')[0]);
 
