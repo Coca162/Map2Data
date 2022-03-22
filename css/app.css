@@ -62,3 +62,9 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+input[type=checkbox] {
+    transform: scale(3);
+    margin-left: 13px;
+    vertical-align: middle;
+}
