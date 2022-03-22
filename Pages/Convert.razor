@@ -13,7 +13,7 @@
 @{
     if (data is not null) 
     {
-        foreach(var line in data.Counties)
+        foreach(var line in data.States)
         {
              <path
              style="fill:@(line.Selected ? "#FF0000" : "none");stroke:#000000;stroke-miterlimit:10;stroke-width:2;"
@@ -44,13 +44,22 @@
 
 <button class="btn btn-primary" @onclick="SaveMap" disabled=@(data is null)>Save Map</button>
 
+<input type="checkbox" @bind="saveOnlyNamed" disabled=@(data is null)>
+
 @code {
     private string name = "";
     private string district = "";
     private Map data;
     private int i = 0;
+    private bool saveOnlyNamed = true;
     private List<string> maps = new() { "SpookVooper", "Ardenti Terra", "Avalon", "Elysian Katonia", "Kogi", "Lanatia", "Landing Cove", "Los Vooperis", "New Avalon", "New Spudland", "New Vooepris", "Novastella", "Old King", "San Vooperisco", "Thesonica", "Voopmont"};
 
+    protected override async Task OnInitializedAsync()
+    {
+        //Add code to set svg of SV by dafault
+    }
+
+    //Remove this as it will be replaced by a district picker
     private async Task SetNewSVG(ChangeEventArgs e)
     {
         name = "";
@@ -90,7 +99,7 @@
     private void PreviousObject()
     {
         SaveCounty();
-        if (i == 0) i = data.Counties.Count - 1;
+        if (i == 0) i = data.States.Count - 1;
         else i--;
         RefreshCounty();
     }
@@ -98,7 +107,7 @@
     private void NextObject()
     {
         SaveCounty();
-        if (i == data.Counties.Count - 1) i = 0;
+        if (i == data.States.Count - 1) i = 0;
         else i++;
         RefreshCounty();
     }
@@ -108,7 +117,7 @@
         bool confirmed = await js.InvokeAsync<bool>("confirm", "Are you sure you want to delete this object?");
         if (!confirmed) return;
 
-        data.Counties.RemoveAt(i);
+        data.States.RemoveAt(i);
         i = 0;
 
         RefreshCounty();
@@ -116,21 +125,22 @@
 
     private void SaveCounty()
     {
-        var current = data.Counties[i];
+        var current = data.States[i];
         current.Selected = false;
         current.Name = name;
     }
 
     private void RefreshCounty()
     {
-        var next = data.Counties[i];
+        var next = data.States[i];
         next.Selected = true;
         name = next.Name;
     }
 
     public async Task SaveMap()
     {
-        var text = Map.ToCSV(data);
+        Console.WriteLine(saveOnlyNamed);
+        var text = Map.ToCSV(data, saveOnlyNamed);
         var bytes = System.Text.Encoding.UTF8.GetBytes(text);
         await SaveAs("output.csv", bytes);
     }

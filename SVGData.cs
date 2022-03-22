@@ -7,22 +7,26 @@ public class Map
     public Map((string, string) size, List<SVGData> counties)
     {
         Size = size;
-        Counties = counties;
+        States = counties;
     }
 
     public ValueTuple<string, string> Size { get; set; }
 
-    public List<SVGData> Counties { get; set; }
-
+    public List<SVGData> States { get; }
 
     public static Map ProcessSVG(string svg)
     {
-        var split = svg.Split("d=\"").Where(x => x.StartsWith("m ", StringComparison.InvariantCultureIgnoreCase));
-        var trimmed = split.Select(x => x.Split('"')[0]);
+        var split = svg.Split("<path")
+            .Where(x => x.Contains("d=\"", StringComparison.InvariantCultureIgnoreCase))
+            .Where(x => !x.StartsWith('<'));
+        var trimmed = split.Select(x => x.Split("/>")[0]);
+        var info = trimmed.Select(x => x.Split("d=\""));
+
+        var final = info.Select(x => (x[1].Split('"')[0], x[2].Split('"')[0]));
 
         var tuple = (svg.Split("width=\"")[1].Split('"')[0], svg.Split("height=\"")[1].Split('"')[0]);
 
-        return new(tuple, trimmed.Select(x => new SVGData(x)).ToList());
+        return new(tuple, final.Select(x => new SVGData(x.Item2, district: x.Item1)).ToList());
     }
 
     public static Map ProcessCSV(string csv)
@@ -36,12 +40,12 @@ public class Map
         foreach (var item in data.Skip(1))
         {
             var split = item.Split(',');
-            final.Add(new SVGData(split[0], split[1]));
+            final.Add(new SVGData(split[1], name: split[0], district: split[2]));
         }
         return new(tuple, final);
     }
 
-    public static string ToCSV(Map map)
+    public static string ToCSV(Map map, bool onlyNamed)
     {
         StringBuilder sb = new();
 
@@ -50,11 +54,13 @@ public class Map
         sb.Append(map.Size.Item2);
         sb.Append('\n');
 
-        foreach (var item in map.Counties)
+        foreach (var item in map.States.Where(x => !onlyNamed && string.IsNullOrWhiteSpace(x.Name)))
         {
             sb.Append(item.Name);
             sb.Append(',');
             sb.Append(item.Path);
+            sb.Append(',');
+            sb.Append(item.District);
             sb.Append('\n');
         }
         return sb.ToString();
@@ -63,13 +69,18 @@ public class Map
 
 public class SVGData
 {
-    public SVGData(string path) => Path = path;
-
-    public SVGData(string name, string path) : this(path) => Name = name;
+    public SVGData(string path, string name = "", string? district = null)
+    {
+        Path = path;
+        Name = name;
+        District = district;
+    }
 
     public string Path { get; }
 
     public string Name { get; set; } = "";
 
     public bool Selected { get; set; } = false;
+
+    public string? District { get; }
 }
